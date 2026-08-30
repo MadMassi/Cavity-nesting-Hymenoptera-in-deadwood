@@ -1,0 +1,25 @@
+variable_name,description,units,type
+log_id,deadwood trap identification label,NA,character
+site,site A or B,NA,factor
+plot,plot ID,NA,character
+position,"staidnign (S) or lying (or ""ground"", G) position of the deadwood",NA,factor
+ants,ant- or no ant-excluision treatment on the deadwood trap,NA,character
+treatment,three deadoowd treatments: lying (G); standing with ant exclusion (nA); standing without ant exlcusion (A),NA,factor
+plot_id,"site + unique plot ID number A_B35 (A site, B35 plot)",NA,character
+tree_r,"plot-level tree richness (six levels: 1,2,4,8,16,24)",species,numeric
+cnpy_cov,plot-level canopy cover,percentage,numeric
+cnpy_prop,plot-level canopy cover as a proportion 0-1,proportion,numeric
+host_abund,total number of individuals (host + parasitoid) emerging from the deadwood trap. A measure of living brood cells,individuals,numeric
+host_rich,number of unique cavity-nesting Hymenoptera species (solitary bees and wasps),species,numeric
+par_abund,"total number of parasitoid individuals emerging (parasite, parasitoid, kleptoparasite)",individuals,numeric
+par_rich,number of unique parasitoid species attacking the cavity-nesting hosts,species,numeric
+ant_trap,abundance of ants on each deadwood trap,individuals,numeric
+ant_pres,presence of ants on each trap,binary,factor
+cwd_vol,total coarse-woody-debris volume at plot-level (not including our deadwood traps),m3,numeric
+cwd_vol_imp,raw and new imputed CWD values for those plots where data was missing,m3,numeric
+ant_w_occ,"leaf-litter ant occurrence, the sum of species incidences across four 1m3 litter samples",species incidences,numeric
+wantoc_imp,raw and new imputed leaf-littler ant occurrence for plots where data was missing,species incidences,numeric
+mc_mass,"gravimetric moisture content of deadwood traps, measured as the weight of the water in a 5 cm thick disk relative to its dry mass",proportion,numeric
+mc_imp,raw and new imputed gravimetric moisture content for deadwood traps where data was missing,proportion,numeric
+geomorph,geomorphological category of the plot (six levels),NA,character
+geo_cat,geomorphology pooled into three categories,NA,factor

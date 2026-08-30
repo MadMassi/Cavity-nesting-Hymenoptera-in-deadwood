@@ -1,7 +1,8 @@
 ###-------------------------------------------------------------------------------------
-# Helper functions for data analysis of manuscript "Moisture reduces saproxylic bee, wasp, and parasitoid diversity in lying and standing deadwood"
+# Helper functions for data analysis of manuscript "Moisture limits the diversity of 
+# nesting bees, wasps, and parasitoids in lying and standing deadwood"
 # Author: Massimo Martini
-# Date: 10th April 2026
+# Date: 28th August 2026
 
 ###-------------------------------------------------------------------------------------
 #Sensitivity analysis
@@ -435,10 +436,10 @@ pretty_glmmTMB_summaries <- function(models,
 
   # --- Header note -----------------------------------------------------------
 header_note <- c(
-  "# Model results for the manuscript \"Humidity mediates saproxylic bee, wasp, and parasitoid diversity in lying and suspended deadwood\"",
+  "# Model results for the manuscript \"Moisture limits the diversity of nesting bees, wasps, and parasitoids in lying and standing deadwood\"",
   "",
   "Author: Massimo Martini",
-  "Date: 10th March 2026",
+  "Date: 17th August 2026",
   "",
   "---",
   ""
@@ -803,142 +804,77 @@ check_linearity <- function(model, var = NULL) {
   invisible(NULL)
 }
 
+# DHARMa diagnostics and summary for a glmmTMB model object
+tmod <- function(model) {
+  dispersion_test <- DHARMa::testDispersion(model)
+  print(dispersion_test)
 
-# ---------------------------------------------------------------------------------------------------
-# Set plotting theme
-theme_manuscript <- function(base_size = 28, base_family = "Arial") {
-  theme_classic(base_size = base_size, base_family = base_family) +
-    theme(
-      axis.title = element_text(size = base_size + 4),
-      axis.text = element_text(size = base_size),
-      strip.text = ggtext::element_markdown(size = base_size),
-      strip.background = element_rect(fill = "grey90", color = "black", linewidth = 1),
-      plot.title = element_text(size = base_size + 6, face = "bold"),
-      legend.text = element_text(size = base_size),
-      legend.title = element_text(size = base_size + 1, face = "plain"),
-      legend.key.width = unit(1.4, "cm"),
-      panel.border = element_blank(),
-      axis.line    = element_line(color = "black", linewidth = 1),
-      panel.spacing = unit(0.6, "lines")
+  simulated_residuals <- DHARMa::simulateResiduals(model)
+  plot(simulated_residuals)
+
+  zero_inflation_test <- DHARMa::testZeroInflation(simulated_residuals)
+  print(zero_inflation_test)
+
+  print(summary(model))
+
+  invisible(
+    list(
+      dispersion_test = dispersion_test,
+      simulated_residuals = simulated_residuals,
+      zero_inflation_test = zero_inflation_test
     )
+  )
 }
 
-theme_set(theme_manuscript())
-
-
-
-
-# ---------------------------------------------------------------------------------------------
-# Swap CWD with FWD in models to compare AIC and results
-
-make_fwd <- function(models, old = "sc_cwd", new = "sc_fwd") {
-  
-  has_term <- function(mod, term) {
-    f <- tryCatch(formula(mod), error = function(e) NULL)
-    if (is.null(f)) return(FALSE)
-    grepl(paste0("\\b", term, "\\b"), paste(deparse(f), collapse = " "))
-  }
-  
-  term_stats <- function(mod, term) {
-    s <- tryCatch(summary(mod), error = function(e) NULL)
-    if (is.null(s)) return(data.frame(estimate = NA_real_, p_value = NA_real_))
-    
-    # glmmTMB: conditional table is in $coefficients$cond
-    tab <- NULL
-    if (!is.null(s$coefficients) && is.list(s$coefficients) && "cond" %in% names(s$coefficients)) {
-      tab <- s$coefficients$cond
-    } else if (!is.null(s$coefficients)) {
-      tab <- s$coefficients
-    }
-    
-    if (is.null(tab) || is.null(rownames(tab)) || !(term %in% rownames(tab))) {
-      return(data.frame(estimate = NA_real_, p_value = NA_real_))
-    }
-    
-    est <- as.numeric(tab[term, "Estimate"])
-    # p-value column name differs across model types
-    pcol <- intersect(colnames(tab), c("Pr(>|z|)", "Pr(>|t|)", "Pr(>Chisq)", "p.value", "p-value"))
-    pval <- if (length(pcol) >= 1) as.numeric(tab[term, pcol[1]]) else NA_real_
-    
-    data.frame(estimate = est, p_value = pval)
-  }
-  
-  # pick only models containing old term
-  keep_names <- names(models)[vapply(models, has_term, logical(1), term = old)]
-  old_models <- models[keep_names]
-  
-  # refit with substitution old -> new
-  models_fwd <- list()
-  
-  for (nm in keep_names) {
-    mod <- old_models[[nm]]
-    
-    # update formula: remove old, add new
-    mod_new <- tryCatch(
-      update(mod, as.formula(paste0(". ~ . - ", old, " + ", new))),
-      error = function(e) NULL
-    )
-    
-    if (!is.null(mod_new)) {
-      models_fwd[[nm]] <- mod_new
-    } else {
-      warning(sprintf("Could not refit model '%s' with %s -> %s (skipped).", nm, old, new))
-    }
-  }
-  
-  # Build comparison table (only for successfully refit models)
-  common_names <- intersect(names(old_models), names(models_fwd))
-  
-  sens_table <- do.call(rbind, lapply(common_names, function(nm) {
-    m_old <- old_models[[nm]]
-    m_new <- models_fwd[[nm]]
-    
-    aic_old <- tryCatch(AIC(m_old), error = function(e) NA_real_)
-    aic_new <- tryCatch(AIC(m_new), error = function(e) NA_real_)
-    
-    st_old <- term_stats(m_old, old)
-    st_new <- term_stats(m_new, new)
-    
-    alpha <- 0.05  # change if you want
-    
-    data.frame(
-      model_name       = nm,
-      AIC_old          = aic_old,
-      AIC_new          = aic_new,
-      delta_AIC        = aic_new - aic_old,
-      term_old         = old,
-      estimate_old     = st_old$estimate,
-      p_old            = st_old$p_value,
-      term_new         = new,
-      estimate_new     = st_new$estimate,
-      p_new            = st_new$p_value,
-      
-      # did sign flip?
-      direction_changed = {
-        ok <- is.finite(st_old$estimate) && is.finite(st_new$estimate)
-        if (!ok) NA else sign(st_old$estimate) != sign(st_new$estimate)
-      },
-      
-      # did significance status flip?
-      signif_changed = {
-        ok <- is.finite(st_old$p_value) && is.finite(st_new$p_value)
-        if (!ok) NA else (st_old$p_value < alpha) != (st_new$p_value < alpha)
-      },
-      
-      stringsAsFactors = FALSE
-    )
-  }))
-  
-  rownames(sens_table) <- NULL
-  
-  list(models_fwd = models_fwd, sens_table = sens_table)
+# Plot the distribution of a continuous variable as a smooth curve
+dense <- function(x, ...) {
+  plot(density(x, na.rm = TRUE), ...)
 }
 
+# Calculate standardized response-scale average marginal effects for
+# continuous predictors: the average predicted change in the response,
+# expressed in SD units, associated with a one-SD increase in the predictor.
+standardized_path <- function(model, predictor) {
+  dat <- model.frame(model)
+  response <- all.vars(formula(model))[1]
 
+  x <- dat[[predictor]]
+  y <- model.response(dat)
 
+  sx <- sd(x, na.rm = TRUE)
+  sy <- sd(y, na.rm = TRUE)
+  h  <- sx * 1e-4
 
+  dat_hi <- dat
+  dat_lo <- dat
 
+  dat_hi[[predictor]] <- x + h / 2
+  dat_lo[[predictor]] <- x - h / 2
 
+  if (inherits(model, "glmmTMB")) {
+    mu_hi <- predict(
+      model,
+      newdata = dat_hi,
+      type = "response",
+      re.form = NA
+    )
 
+    mu_lo <- predict(
+      model,
+      newdata = dat_lo,
+      type = "response",
+      re.form = NA
+    )
+  } else {
+    mu_hi <- predict(model, newdata = dat_hi, type = "response")
+    mu_lo <- predict(model, newdata = dat_lo, type = "response")
+  }
 
+  average_slope <- mean((mu_hi - mu_lo) / h, na.rm = TRUE)
 
+  data.frame(
+    Response = response,
+    Predictor = predictor,
+    Standardized_effect = average_slope * sx / sy
+  )
+}
