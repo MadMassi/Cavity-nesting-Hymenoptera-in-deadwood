@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite it as below."
+title: "Cavity-nesting Hymenoptera in deadwood"
+version: 2.0.0
+date-released: 2026-08-30
+authors:
+  - family-names: Martini
+    given-names: Massimo
+repository-code: "https://github.com/MadMassi/Cavity-nesting-Hymenoptera-in-deadwood"
+type: software
