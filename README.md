@@ -2,7 +2,7 @@
 
 This repository contains the R code used for the study *"Moisture
 limits the diversity of nesting bees, wasps, and parasitoids in lying and
-standing deadwood"*. (Martini et al., submitted).
+standing deadwood"*. (Martini et al. 2026, Basic and Applied Ecology).
 
 The study examines cavity-nesting Hymenoptera and their associated natural
 enemies collected from experimental deadwood traps at the BEF-China platform.
